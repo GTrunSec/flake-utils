@@ -64,11 +64,17 @@ Returns:
 }
 ```
 
-## Example
+### `simpleFlake -> attrs -> attrs`
+
+TODO: document this properly
+
+## Examples
+
+### eachDefaultSystem example
 
 Here is how it looks like in practice:
 
-[$ example/flake.nix](example/flake.nix) as nix
+[$ examples/each-system/flake.nix](examples/each-system/flake.nix) as nix
 ```nix
 {
   description = "Flake utils demo";
@@ -79,12 +85,36 @@ Here is how it looks like in practice:
     flake-utils.lib.eachDefaultSystem (system:
       let pkgs = nixpkgs.legacyPackages.${system}; in
       rec {
-        packages.hello = pkgs.hello;
+        packages = flake-utils.lib.flattenTree {
+          hello = pkgs.hello;
+          gitAndTools = pkgs.gitAndTools;
+        };
         defaultPackage = packages.hello;
         apps.hello = flake-utils.lib.mkApp { drv = packages.hello; };
         defaultApp = apps.hello;
       }
     );
+}
+```
+
+### simpleFlake example
+
+Here is how it looks like in practice:
+
+[$ examples/simple-flake/flake.nix](examples/simple-flake/flake.nix) as nix
+```nix
+{
+  description = "Flake utils demo";
+
+  inputs.flake-utils.url = "github:numtide/flake-utils/simple-flake";
+
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.simpleFlake {
+      inherit self nixpkgs;
+      name = "simple-flake";
+      overlay = ./overlay.nix;
+      shell = ./shell.nix;
+    };
 }
 ```
 

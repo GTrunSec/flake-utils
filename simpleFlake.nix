@@ -1,0 +1,57 @@
+{ lib }:
+# This function returns a flake outputs-compatible schema.
+{
+  # pass an instance of self
+  self
+, # pass an instance of the nixpkgs flake
+  nixpkgs
+, # pass either a function or a file
+  overlay
+, # use this to load other flakes overlays to supplement nixpkgs
+  preOverlays ? [ ]
+, # we assume that the name maps to the project name, and also that the
+  # overlay has an attribute with the `name` prefix that contains all of the
+  # project's packages.
+  name
+, # nixpkgs config
+  config ? { }
+, # maps to the devShell output. Pass in a shell.nix file or function.
+  shell ? null
+, # pass the list of supported systems
+  systems ? [ "x86_64-linux" ]
+}:
+let
+  maybeImport = obj:
+    if (builtins.typeOf obj == "path") || (builtins.typeOf obj == "string") then
+      import obj
+    else
+      obj
+  ;
+
+  overlays = preOverlays ++ [ (maybeImport overlay) ];
+
+  shell_ = maybeImport shell;
+
+  outputs = lib.eachSystem systems (system:
+    let
+      pkgs = import nixpkgs {
+        inherit
+          config
+          overlays
+          system
+          ;
+      };
+    in
+    {
+      legacyPackages = pkgs.${name};
+
+      # flake expects a flat attrset containing only derivations as values
+      packages = lib.flattenTree pkgs.${name};
+
+    } // (if builtins.isNull shell then { } else {
+      devShell = shell_ { inherit pkgs; };
+    })
+  );
+
+in
+outputs
