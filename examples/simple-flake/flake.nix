@@ -1,10 +1,9 @@
 {
   description = "Flake utils demo";
 
-  inputs.flake-utils.url = "github:numtide/flake-utils/simple-flake";
-
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.simpleFlake {
+  outputs = { self, nixpkgs }:
+    let flake-utils = import ../..; in
+    flake-utils.simpleFlake {
       inherit self nixpkgs;
       name = "simple-flake";
       overlay = ./overlay.nix;
